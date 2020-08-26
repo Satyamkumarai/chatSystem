@@ -27,7 +27,7 @@ if(messageForm != null){
     //Send Your name! to the Server..
     socket.emit("new-user",roomName,name);
     
-    appendMessageString("You Joined the Chat");
+    appendMessageString("<strong>You</strong> Joined the Chat");
 
     //When You send a message..
     messageForm.addEventListener('submit',(e)=>{                        //<<<<ALso  here..
@@ -38,7 +38,7 @@ if(messageForm != null){
         //and send the message and the room Name to the server..
         socket.emit('send-chat-message',roomName,message);              //<<<This is the only place where you pass the roomName..
         //Also append it to your screen..
-        appendMessageString("You: "+message);
+        appendMessageString("<strong>You</strong>: "+message);
         //clear the input box..
         messageInput.value  = "";
     })
@@ -54,7 +54,7 @@ socket.on('room-created',room=>{
     const roomLink = document.createElement('a');
     roomLink.href=`/${room}`;
     roomLink.innerText = "Join";
-    console.log("Yup New Room Was Created.")
+    // console.log("Yup New Room Was Created.")
     roomContainer.append(roomElement);
     roomContainer.append(roomLink)
 
@@ -67,14 +67,14 @@ socket.on('room-created',room=>{
 socket.on('user-connected',name=>{
     //add the user name to the screen..
     
-    appendMessageString(`${name} Joined the Chat`,true)
+    appendMessageString(`<strong>${name}</strong> Joined the Chat`,true)
 })
 
 
 //when you recieve a chat message..
 socket.on("chat-message",object=>{
     //display it..
-    appendMessage(object,true);
+    appendMessageString(`<strong>${object.name}</strong>: ${object.message}`,true);
 
 })
 // socket.on('recieve-chat-message',message=>{
@@ -85,7 +85,7 @@ socket.on("chat-message",object=>{
 
 //When a user disconnects...
 socket.on('user-disconnected',name=>{
-    appendMessageString(`${name} disconnected! `,true);
+    appendMessageString(`<strong>${name}</strong> disconnected! `,true);
 })
 
 //Function to add new divs..
@@ -102,7 +102,7 @@ function appendMessageString(message,other=false){
     const messageElement = document.createElement('div');
     if (other)
         messageElement.classList.add('other')
-    messageElement.innerText=message;
+    messageElement.innerHTML=message;
     messageContainer.append(messageElement);
 }
 ///---------------------------------------------------------
