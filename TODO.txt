@@ -1,4 +1,5 @@
 1. Style This shit..
-2. Password protected rooms 
-3. Encrypt messages
-4. Use https Server..
+2. Add a DB.
+3. Password protected rooms 
+4. Encrypt messages
+5. Use https Server..
