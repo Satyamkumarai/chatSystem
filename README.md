@@ -3,7 +3,7 @@
 1. Clone the repo :
     
     ```bash
-    git clone <theUrl>
+    git clone git@github.com:Satyamkumarai/chatSystem.git
     ```
 2. Go to the dir called `chatSystem`
     
