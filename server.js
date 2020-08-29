@@ -59,7 +59,7 @@ server.listen(3000);
 //When a user connects..
 io.on("connection" ,(socket)=>{
     //Send a message that He/she joined Successfully
-    // socket.emit("chat-message","You Joined!");
+    // socket.emit("chat-message","You Joined!");//don't need To Do this..
     
     //Recieve the  name  of the user and the roomName
     socket.on('new-user',(room,name)=>{
