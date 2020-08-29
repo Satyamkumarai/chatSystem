@@ -33,8 +33,9 @@ app.use(express.urlencoded({extended:true}));
 
 
 //Serve our index,ejs for the root 
-app.get("/",(req,res)=>{
+app.get("/",async (req,res)=>{
     // passing in the already existing rooms..
+    const rooms = await roomModel.find();
     res.render('index',{rooms:rooms}); 
 })
 
@@ -100,6 +101,15 @@ app.post('/room',async(req,res)=>{
     
 })
 
+// var log = console.log;
+// console.log = function() {
+//     log.apply(console, arguments);
+//     // Print the stack trace
+//     console.trace();
+// };
+
+
+
 
 
 //connecting to the dB
@@ -116,33 +126,51 @@ io.on("connection" ,(socket)=>{
     socket.on('new-user',async (room,name)=>{
         //Add the user to the room..
         socket.join(room);              //This "connects" the socket object to the  roomName which is a string
-
+        //Get the room from the DB..
         var getRoom = await roomModel.findOne({roomName:room});
         //add the name  to the users obj..
-        // rooms[room].users[socket.id] = name;
-        console.log(`Your Socket Id is  ${socket.id} And NAme : ${name}`);
-        const user = {id:socket.id,name:name};                                                  //<<Do i Need To worry about duplicates?
-        getRoom.users.push(user);
-        getRoom.save();
+        // console.log(`Your Socket Id is  ${socket.id} And NAme : ${name}`);              //_DEBUG
+        //An object to create the actual user..
+        const user = {
+            _id:socket.id,                                  //The id of the user is the socket id..
+            name:name,
+            roomId: getRoom._id                             //Link to the room in which this user is (will be)  in ..
+        };                                     
+        //Creating the actual user in the Db..           
+        var createdUser = new userModel(user);
+        createdUser.save((err)=>{
+            if (err){
+                console.log(`Error Creating new User ${user}`);
+            }else{
+
+                //No errors..
+                // console.log(`User ${name} Created `);    //_DEBUG
+                ///Since the user Was created (without errors)
+                //add the user to the room..
+                getRoom.users.push(createdUser._id);        
+                // console.log(`${createdUser.name} was added to the room : ${getRoom.roomName}`);   //_DEBUG
+                getRoom.save();
+            }
+        });
+
 
         //broadcast the message that this user has joined..
         socket.to(room).broadcast.emit("user-connected",name);
-    })
+
+    })//done..
 
 
     //when the user sends a message..
     socket.on('send-chat-message',async (room,message)=>{
         //broadcast it to every one else in the room.. with the name of the sender and the message..
-        const getTheUsers = await roomModel.findOne({roomName:room},{users:{id:1 ,name:1} })
-        const userName = searchKeyValArray(getTheUsers['users'],'id',socket.id)['name']
-        if (userName === null){
-            console.log("Failed Query")
-        
-        }else{
-            
+        const USER = await userModel.findOne({_id: socket.id});
+        // console.log(`User : ${USER} `)
+        // console.log(USER);
+        if (USER != null){
+
             socket.to(room).broadcast.emit('chat-message',{
                 message:message,
-                name :  userName                                     //<<<<<<<<<<<<<<<<An error can occur here!!
+                name :  USER.name                                     //<<<<<<<<<<<<<<<<An error can occur here!!
                 // name:rooms[room].users[socket.id]   //In the room  the User with socketId of socket.id
             }) ;
         }
@@ -150,45 +178,27 @@ io.on("connection" ,(socket)=>{
 
     //When a user Leaves..
     socket.on('disconnect',async ()=>{
-        
-        
-        var rooms = await roomModel.find({"users.id":socket.id})
-        console.log(rooms);
-        //get all the rooms the user(which is a socket object) is in ..
-        getUserRooms(socket).forEach(room => {
-            //Broadcast to that room that the user has disconnected..
-            console.log("DIsconnected!");
-            console.log(rooms[room].users[socket.id]);
-            socket.broadcast.emit('user-disconnected',rooms[room].users[socket.id]);
-            //delete the name of the user..
-            delete rooms[room].users[socket.id]
-    
-            //Note: We used socket.join(<roomName>) to associate a room with the user..
-            //When the user disconnects, the room is automatically disassociated..
+
+        const USER = await userModel.findOne({_id:socket.id});
+        // console.log("USER DISCONNECTED -------------------------------");
+        // console.log(USER);
+        if (USER != null){
+            const USERNAME = USER.name;
+
+            const userRoom = await roomModel.findOne({_id:USER.roomId})                         //<<<<<<THis needs refactoring I'm Too tired!
             
-        });
+            const roomName = userRoom.roomName;
+            await roomModel.updateOne(
+                { _id:USER.roomId },
+                {$pull : {users:socket.id}},(err,no)=>{
+                    USER.remove();
+                    socket.to(roomName).broadcast.emit('user-disconnected',USERNAME);
+                }
+            )
+            await roomModel.deleteMany({ users: { $exists: true, $size: 0 } })
+        }
+        
     })
 })
 
 
-//a util funciton...
-function getUserRooms(socket){
-    return Object.entries(rooms).reduce((names,[name,room])=>{
-        if (room.users[socket.id] != null)  names.push(name)
-        return names
-
-    },[])
-}
-
-
-
-// a util function
-function searchKeyValArray(array,key,val){
-    for (var i=0;i<array.length;i++){
-        // console.log(array[i][key],val);
-        if (array[i][key] === val)
-    
-        return array[i];
-    }
-    return null;
-}
