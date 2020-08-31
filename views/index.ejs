@@ -27,9 +27,9 @@
     -->
 
     <div id="room-container" >
-        <% Object.keys(rooms).forEach(room=>{ %>
-            <div><%= room%></div>
-            <a href="<%=`/${room}`%>">Join</a>
+        <% rooms.forEach(room=>{ %>
+            <div><%= room.roomName%></div>
+            <a href="<%=`/${room.roomName}`%>">Join</a>
        <% }) %>
     </div>
     <form action="/room" method="POST">
