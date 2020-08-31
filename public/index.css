@@ -37,9 +37,7 @@ body{
     background:transparent;
     border-left: none;
 }
-#message-container div:other:first(){
-    margin:20px;
-}
+
 
 
 #send-container{
@@ -48,7 +46,6 @@ body{
     width:90%;
     max-width: 1100px;
     display: flex;
-    align-items: center;
     min-height: 5vh;
     margin-top: auto;
     padding-bottom: .75rem;
@@ -62,8 +59,15 @@ body{
     margin: 0px -1px 0px 4px;
     background: none;
     border: none;
+    transform:scale(1);
+    transition: transform 0.3s;
+    outline:none;
 }
+#send-btn:hover{
+    transform:scale(1.3);
+    transition: transform 0.3s;
 
+}
 #message-input{
     width: 100%;
     margin: 5px 7px 5px 3rem;
