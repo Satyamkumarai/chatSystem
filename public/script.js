@@ -104,6 +104,6 @@ function appendMessageString(message,other=false){
         messageElement.classList.add('other')
     messageElement.innerHTML=message;
     messageContainer.append(messageElement);
-    messageElement.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"});
+    messageElement.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
 }
 ///---------------------------------------------------------
