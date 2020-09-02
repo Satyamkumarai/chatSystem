@@ -6,7 +6,7 @@ const Schema = mongoose.Schema;
 const userSchema = new  Schema({
     _id  : {type:String,required: true},                                                      //user Is Identifed by his  socketId
     name : String,
-    roomId:{type:Schema.Types.ObjectId, ref: "Room"}                          //User has a reference to the room it is in..
+    roomId:{type:Schema.Types.ObjectId, ref: "Room"},                          //User has a reference to the room it is in..
 })
 
 
@@ -14,7 +14,8 @@ const userSchema = new  Schema({
 //Each room has a name and a list of ref to users who are in that room..
 const roomSchema = new Schema({
     roomName:String,
-    users:[{type:String, ref:"User"}]                  //users just contains a list of object Id Of Model name "User"
+    users:[{type:String, ref:"User"}],                  //users just contains a list of object Id Of Model name "User"
+    password:String
 })
 
 var User = mongoose.model('User',userSchema);

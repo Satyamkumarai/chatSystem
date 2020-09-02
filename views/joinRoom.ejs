@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chatSystem | Join Room</title>
+     <!-- Here The use of defer tag ensures that all the scripts get loaded only then  -->
+    <script defer src= "http://localhost:3000/socket.io/socket.io.js"></script>
+    <script defer src="js/main.js"></script>
+    <script defer src="js/index_script.js"></script>
+</head>
+<body>
+    <h1>Join Room!</h1>
+    <form action="/join" method="post">
+        <div>
+            <label for="room">Room Name</label>
+            <input type="text" name="room" id="room" required value="<%=join%>">
+        </div>
+        <div>
+            <label for="password">Room Password</label>
+            <input type="password" name="password" id="password" required>
+        </div>
+        <button type="submit">Join Room</button>
+    </form>
+    <div>
+        <a href="/create">Create Room</a>
+    </div>
+    <H3>Active Rooms:</H3>
+    <div id="room-container" >
+        <% rooms.forEach(room=>{ %>
+            <div><%= room.roomName%></div>
+            <a href="/join?room=<%=`${room.roomName}`%>">Join</a>
+            <% }) %>
+    </div>
+
+</body>
+</html>

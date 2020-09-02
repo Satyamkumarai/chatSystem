@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CreateRoom</title>  
+    <link rel="stylesheet" href="css/index.css">
+    <!-- Here The use of defer tag ensures that all the scripts get loaded only then  -->
+    <!-- <script defer src= "http://localhost:3000/socket.io/socket.io.js"></script> -->
+    <!-- <script defer src="js/main.js"></script> -->
+    <!-- <script defer src="js/index_script.js"></script> -->
+             
+</head>
+<body>
+    <div class="full-screen-container">
+
+        <div class="form-container">
+
+            <form action="/room" method="POST">
+               
+                <div class="input-group">
+                    <label for="room-name">Room Name</label>                    
+                    <input type="text" name="room" id="room-name" placeholder="Enter room name" required>
+                </div>
+               
+                <div class="input-group">
+                    <label for="room-password">Room Password</label>
+                    <input type="password" name="password" id = "room-password"  placeholder= "Enter room Password" required>
+                </div>
+
+                <button type="submit">Create Room</button>
+            </form>
+        </div>
+        <div>
+            <a href="/join">Join Room</a>
+        </div>
+    </div>
+</body>
+</html>
