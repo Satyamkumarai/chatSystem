@@ -66,43 +66,7 @@ app.use(passport.initialize())
 app.use(passport.session());
 
 
-function checkAuthenticated(req,res,next){
-    console.log(`checkAuthenticated`);
-    if (req.isAuthenticated()){
-        console.log(`-----AUTH-Done-----`);
-        return next();
-    }
-    console.log(`-----NOT DONE---------`);
-    return  res.redirect('/join')       //join room page..
-}
-async function getSocketIdByName(RoomObj,userName){
-    const usr = RoomObj.users;
-    for (var i=0; i<usr.length; i++){
-        const idMayBe = await userModel.findOne({_id:usr[i],name:userName})
-        if (idMayBe != null){
-            console.log(`foundId ${idMayBe._id}`);
-            return idMayBe._id;
-        }
-    }
-    return null
-}
-async function checkNotAuthenticated(req,res,next){
-    console.log(`checkNotAuthenticated`);
 
-    if (req.isAuthenticated()){
-        console.log(`-----AUTH-Done-----`);
-        const ROOM = req.user;
-        const socketID = await getSocketIdByName(ROOM,req.session.name)
-        console.log(`Disconnect -> ${socketID}`);
-        if (socketID)
-            io.sockets.sockets[socketID].disconnect();
-        //Disconnect the socket 
-      return   res.render('room',{roomName :req.user.roomName,IP:serverLocation,userName:req.session.name})                 
-    }
-    console.log(`-----NOT DONE---------`);
-    return next();
-
-}
 //Serve our index,ejs for the root 
 app.get("/",checkNotAuthenticated,async (req,res)=>{
     // passing in the already existing rooms..
@@ -113,9 +77,7 @@ app.get("/",checkNotAuthenticated,async (req,res)=>{
 app.get('/join',checkNotAuthenticated,async(req,res)=>{
     const rooms = await roomModel.find();
     if (req.query.room){
-        console.log('here');
         res.render('joinRoom.ejs',{join:req.query.room,rooms:rooms,IP:serverLocation});
-        console.log('end');
     }else{
         res.render('joinRoom.ejs',{join:"",rooms:rooms,IP:serverLocation});
     }
@@ -130,7 +92,6 @@ app.get('/create',checkNotAuthenticated,(req,res)=>{
 app.get('/join/:room',checkAuthenticated,(req,res)=>{
 
     console.log(`rendering room : ${req.params.room}`);
-    console.log(io)
     res.render('room.ejs',{roomName:req.params.room,IP:serverLocation,userName:req.session.name})
 })
 
@@ -139,40 +100,10 @@ app.get('/join/:room',checkAuthenticated,(req,res)=>{
 app.post("/join",checkNotAuthenticated,passport.authenticate('local',{
     failureFlash:true
 }),(req,res)=>{
-    console.log(`redirecing to the room`);
     req.session.name=req.body.usrname
     req.session.save();
     res.redirect(`/join/${req.body.room}?user=${req.body.usrname}`)
 })
-// async(req,res)=>{
-        //if the room exists ..
-    // const roomName = req.body.room;
-    // const password = req.body.password;
-
-    // const findRoom = await roomModel.findOne({roomName:roomName})
-    // if (findRoom != null){
-    //     try{
-    //         // console.log(`found room`);
-
-    //         if (await bcrypt.compare(password,findRoom.password)){
-    //             res.render('room',{roomName :roomName});
-    //         }else{
-    //             //Incorrect password
-    //             res.redirect('/join')               //need to set it to show message..\  #TODO
-                
-    //         }
-    //     }catch (e){
-    //         console.log(`Error occured! ${e}`);
-    //         res.sendStatus(500).send();
-    //     }    //If the room exists allow the connection..
-            
-    // }else{
-    //     //If it does no exist redirect to join..
-    //     res.redirect('/join')
-    // }
-    // console.log(`reirecting to /join/${roomName}`);
-    // res.redirect(`/join/${roomName}`);
-// })
 
 
 
@@ -221,7 +152,7 @@ server.listen(PORT||3000);
 
 //When a user connects..
 io.on("connection" ,(socket)=>{
-    console.log(`Incomming Message..`)
+    console.log(`Incomming Connection..`)
     console.log(socket.id)
     //Send a message that He/she joined Successfully
     // socket.emit("chat-message","You Joined!");//don't need To Do this..
@@ -253,7 +184,6 @@ io.on("connection" ,(socket)=>{
                     ///Since the user Was created (without errors)
                     //add the user to the room..
                     getRoom.users.push(createdUser._id);        
-                    // console.log(`${createdUser.name} was added to the room : ${getRoom.roomName}`);   //_DEBUG
                     getRoom.save();
                 }
             });
@@ -272,14 +202,11 @@ io.on("connection" ,(socket)=>{
     socket.on('send-chat-message',async (room,message)=>{
         //broadcast it to every one else in the room.. with the name of the sender and the message..
         const USER = await userModel.findOne({_id: socket.id});
-        // console.log(`User : ${USER} `)
-        // console.log(USER);
         if (USER != null){
 
             socket.to(room).broadcast.emit('chat-message',{
                 message:message,
                 name :  USER.name                                     //<<<<<<<<<<<<<<<<An error can occur here!!
-                // name:rooms[room].users[socket.id]   //In the room  the User with socketId of socket.id
             }) ;
         }
     })
@@ -289,8 +216,6 @@ io.on("connection" ,(socket)=>{
         console.log(`Disconnected  id : ${socket.id}`)
 
         const USER = await userModel.findOne({_id:socket.id});
-        // console.log("USER DISCONNECTED -------------------------------");
-        // console.log(USER);
         if (USER != null){
             const USERNAME = USER.name;
 
@@ -311,3 +236,38 @@ io.on("connection" ,(socket)=>{
 })
 
 
+//-------------------Util Functions-----------------------
+async function getSocketIdByName(RoomObj,userName){
+    const usr = RoomObj.users;
+    for (var i=0; i<usr.length; i++){
+        const idMayBe = await userModel.findOne({_id:usr[i],name:userName})
+        if (idMayBe != null){
+            console.log(`foundId ${idMayBe._id}`);
+            return idMayBe._id;
+        }
+    }
+    return null
+}
+
+
+function checkAuthenticated(req,res,next){
+    if (req.isAuthenticated()){
+        return next();
+    }
+    return  res.redirect('/join')       //join room page..
+}
+
+async function checkNotAuthenticated(req,res,next){
+
+    if (req.isAuthenticated()){
+        const ROOM = req.user;
+        const socketID = await getSocketIdByName(ROOM,req.session.name)
+        console.log(`Disconnect -> ${socketID}`);
+        if (socketID)
+            io.sockets.sockets[socketID].disconnect();
+        //Disconnect the socket 
+      return   res.render('room',{roomName :req.user.roomName,IP:serverLocation,userName:req.session.name})                 
+    }
+    return next();
+
+}

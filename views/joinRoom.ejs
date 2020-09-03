@@ -12,6 +12,9 @@
 </head>
 <body>
     <h1>Join Room!</h1>
+     <%if (messages.error){%>
+        <div id="flashMessage"><%=messages.error%></div>
+    <%}%>
     <form action="/join" method="post">
         <div>
             <label for="room">Room Name</label>
