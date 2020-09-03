@@ -2,6 +2,7 @@ if (process.env.NODE_ENV != 'production'){
     require('dotenv').config();
     //Don't forget to create a .env file in the same dir as this file and in that set SESSION_SECRET=<some Random Value..>
 }
+
 //Importing the socketio and then binding it to port 3000
 //This implicitly start a http server on the specified port....
 const express = require("express");
@@ -23,8 +24,8 @@ const flash = require('express-flash');
 const session = require('express-session');
 //importing our passport initialiing module..
 const passportInitiaize = require('./passport_config');
-
-
+const serverLocation = process.env.DOMAIN || process.env.IP || "localhost"
+const PORT = process.env.PORT || 3000
 
 
 
@@ -80,7 +81,7 @@ function checkNotAuthenticated(req,res,next){
 
     if (req.isAuthenticated()){
         console.log(`-----AUTH-Done-----`);
-      return   res.render('room',{roomName :req.user.roomName})                 //Not sure//
+      return   res.render('room',{roomName :req.user.roomName,IP:serverLocation})                 //Not sure//
     }
     console.log(`-----NOT DONE---------`);
     return next();
@@ -97,22 +98,22 @@ app.get('/join',checkNotAuthenticated,async(req,res)=>{
     const rooms = await roomModel.find();
     if (req.query.room){
         console.log('here');
-        res.render('joinRoom.ejs',{join:req.query.room,rooms:rooms});
+        res.render('joinRoom.ejs',{join:req.query.room,rooms:rooms,IP:serverLocation});
         console.log('end');
     }else{
-        res.render('joinRoom.ejs',{join:"",rooms:rooms});
+        res.render('joinRoom.ejs',{join:"",rooms:rooms,IP:serverLocation});
     }
 })
 
 
 //create room Page..
 app.get('/create',checkNotAuthenticated,(req,res)=>{
-    res.render('createRoom.ejs');
+    res.render('createRoom.ejs',{IP:serverLocation});
 })
 
 app.get('/join/:room',checkAuthenticated,(req,res)=>{
     console.log(`rendering room : ${req.params.room}`);
-    res.render('room.ejs',{roomName:req.params.room})
+    res.render('room.ejs',{roomName:req.params.room,IP:serverLocation})
 })
 
 //For any Room queried..
@@ -194,7 +195,7 @@ app.post('/room',checkNotAuthenticated,async(req,res)=>{
 //connecting to the dB
 mongoose.connect('mongodb://localhost/chatSystem',{useNewUrlParser:true,useUnifiedTopology:true});
 //We are listening on port 3000.
-server.listen(3000);
+server.listen(PORT||3000);
 
 //---------------------Socket connection Handling---------------------
 

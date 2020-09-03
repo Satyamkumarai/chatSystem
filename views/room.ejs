@@ -8,8 +8,9 @@
     <!-- Here The use of defer tag ensures that all the scripts get loaded only then  -->
     <script>
         const roomName = "<%=roomName%>";
+        const serverIP = "<%=IP%>";
     </script>
-    <script defer src= "http://localhost:3000/socket.io/socket.io.js"></script>
+    <script defer src= "http://<%=IP%>/socket.io/socket.io.js"></script>
     <script defer src="/js/main.js"></script>
     <script defer src="/js/room_script.js"></script>
 </head>
