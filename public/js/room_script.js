@@ -6,15 +6,16 @@ const messageContainer = document.getElementById('message-container');
 //-------------Start------------
 
 //Get the name 
-var name = prompt("Enter Your Name..")
-console.log(name)
-if (name === "" || name == null) {
-    alert("Your name would be Default");
-    name = "Default"
-}
+// var name = prompt("Enter Your Name..")
+// console.log(name)
+// if (name === "" || name == null) {
+//     alert("Your name would be Default");
+//     name = "Default"
+// }
+const name = userName
 //Send Your name! to the Server..
 socket.emit("new-user",roomName,name);
-
+console.log(socket.id);
 appendMessageString("<strong>You</strong> Joined the Chat");
 
 //When You send a message..
@@ -59,7 +60,9 @@ socket.on('user-disconnected',name=>{
 })
 
 
-
+socket.on('disconnect',()=>{
+    appendMessageString(`<strong>You Have Been Disconnected!</strong>`)
+})
 //----------Util Functions----------
 
 
