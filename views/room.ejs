@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Chat System</title>
-    <link rel="stylesheet" href="css/room.css">
+    <link rel="stylesheet" href="/css/room.css">
     <!-- Here The use of defer tag ensures that all the scripts get loaded only then  -->
     <script>
         const roomName = "<%=roomName%>";
     </script>
     <script defer src= "http://localhost:3000/socket.io/socket.io.js"></script>
-    <script defer src="js/main.js"></script>
-    <script defer src="js/room_script.js"></script>
+    <script defer src="/js/main.js"></script>
+    <script defer src="/js/room_script.js"></script>
 </head>
 <body>
     <div id="message-container">
@@ -19,7 +19,7 @@
     <form id="send-container">
         <!-- <Label for = "inputBox">Write A messae to send </Label> -->
         <input type="text" id= "message-input" autocomplete="off">
-        <button type="submit" id="send-btn"><img src="Images/Icons/send-button.png" height="30px" width="30px"></button>
+        <button type="submit" id="send-btn"><img src="/Images/Icons/send-button.png" height="30px" width="30px"></button>
     </div>
 
 </body>

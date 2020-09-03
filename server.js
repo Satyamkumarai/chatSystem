@@ -1,3 +1,7 @@
+if (process.env.NODE_ENV != 'production'){
+    require('dotenv').config();
+    //Don't forget to create a .env file in the same dir as this file and in that set SESSION_SECRET=<some Random Value..>
+}
 //Importing the socketio and then binding it to port 3000
 //This implicitly start a http server on the specified port....
 const express = require("express");
@@ -9,15 +13,34 @@ const server  = require('http').createServer(app);
 const io = require("socket.io")(server);
 //Importing mongoose .. A wrapper for mongo db..
 const mongoose = require('mongoose');
+//Importing bcrypt for password hashing
 const bcrypt = require('bcrypt');
+//importing passport to act as the  middleware authentication
+const passport = require('passport');
+//importing flash to be able to show flash messages in the views
+const flash = require('express-flash');
+//importing express-session to handle the user session This will provide persistance
+const session = require('express-session');
+//importing our passport initialiing module..
+const passportInitiaize = require('./passport_config');
+
+
+
 
 
 
 //importing the models..
 const myModels = require('./models/roomModel');
+const { initialize } = require("passport");
 const roomModel = myModels.Room;
 const userModel = myModels.User;
 
+//Setting up the config for our passport..
+passportInitiaize(
+    passport,
+    async (roomName)=>await roomModel.findOne({roomName:roomName}),
+    async (roomId)=>await roomModel.findById(roomId)
+);
 
 
 //setting the view folder..
@@ -28,17 +51,49 @@ app.use(express.static('public'));
 app.set('view engine','ejs')
 //setting the app to use encodedurl to be able to get the roomName (see app.get("/room"))
 app.use(express.urlencoded({extended:true}));
+//setting our app to use flash
+app.use(flash())
+//Setting our app to use express-session passing in the object..
+app.use(session({
+    secret:process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized:false
+}))
+//setting the app to use the passport .session ()
+//Ref:https://stackoverflow.com/questions/22052258/what-does-passport-session-middleware-do 
+//Read the ans by user "indsaymacvean" and edited by "Matthcw"
+app.use(passport.initialize())
+app.use(passport.session());
 
 
+function checkAuthenticated(req,res,next){
+    console.log(`checkAuthenticated`);
+    if (req.isAuthenticated()){
+        console.log(`-----AUTH-Done-----`);
+        return next();
+    }
+    console.log(`-----NOT DONE---------`);
+    return  res.redirect('/join')       //join room page..
+}
+function checkNotAuthenticated(req,res,next){
+    console.log(`checkNotAuthenticated`);
 
+    if (req.isAuthenticated()){
+        console.log(`-----AUTH-Done-----`);
+      return   res.render('room',{roomName :req.user.roomName})                 //Not sure//
+    }
+    console.log(`-----NOT DONE---------`);
+    return next();
+
+}
 //Serve our index,ejs for the root 
-app.get("/",async (req,res)=>{
+app.get("/",checkNotAuthenticated,async (req,res)=>{
     // passing in the already existing rooms..
     res.render('index'); 
 })
 
 //Join room page
-app.get('/join',async(req,res)=>{
+app.get('/join',checkNotAuthenticated,async(req,res)=>{
     const rooms = await roomModel.find();
     if (req.query.room){
         console.log('here');
@@ -51,43 +106,58 @@ app.get('/join',async(req,res)=>{
 
 
 //create room Page..
-app.get('/create',(req,res)=>{
+app.get('/create',checkNotAuthenticated,(req,res)=>{
     res.render('createRoom.ejs');
 })
 
-//For any Room queried..
-app.post("/join",async(req,res)=>{
-        //if the room exists ..
-    const roomName = req.body.room;
-    const password = req.body.password;
-    const findRoom = await roomModel.findOne({roomName:roomName})
-    if (findRoom != null){
-        try{
-            // console.log(`found room`);
-
-            if (await bcrypt.compare(password,findRoom.password)){
-                res.render('room',{roomName :roomName});
-            }else{
-                //Incorrect password
-                res.redirect('/join')               //need to set it to show message..\  #TODO
-                
-            }
-        }catch (e){
-            console.log(`Error occured! ${e}`);
-            res.sendStatus(500).send();
-        }    //If the room exists allow the connection..
-            
-    }else{
-        //If it does no exist redirect to join..
-        res.redirect('/join')
-    }
+app.get('/join/:room',checkAuthenticated,(req,res)=>{
+    console.log(`rendering room : ${req.params.room}`);
+    res.render('room.ejs',{roomName:req.params.room})
 })
+
+//For any Room queried..
+//i.e Incoming request to join the Room
+app.post("/join",checkNotAuthenticated,passport.authenticate('local',{
+    failureFlash:true
+}),(req,res)=>{
+    console.log(`redirecing to the room`);
+    res.redirect(`/join/${req.body.room}`)
+})
+// async(req,res)=>{
+        //if the room exists ..
+    // const roomName = req.body.room;
+    // const password = req.body.password;
+
+    // const findRoom = await roomModel.findOne({roomName:roomName})
+    // if (findRoom != null){
+    //     try{
+    //         // console.log(`found room`);
+
+    //         if (await bcrypt.compare(password,findRoom.password)){
+    //             res.render('room',{roomName :roomName});
+    //         }else{
+    //             //Incorrect password
+    //             res.redirect('/join')               //need to set it to show message..\  #TODO
+                
+    //         }
+    //     }catch (e){
+    //         console.log(`Error occured! ${e}`);
+    //         res.sendStatus(500).send();
+    //     }    //If the room exists allow the connection..
+            
+    // }else{
+    //     //If it does no exist redirect to join..
+    //     res.redirect('/join')
+    // }
+    // console.log(`reirecting to /join/${roomName}`);
+    // res.redirect(`/join/${roomName}`);
+// })
 
 
 
 
 //Request to create a new room..
-app.post('/room',async(req,res)=>{
+app.post('/room',checkNotAuthenticated,async(req,res)=>{
     const roomName = req.body.room;
     const password = req.body.password
     const findRoom = await roomModel.findOne({roomName:roomName});
@@ -213,7 +283,7 @@ io.on("connection" ,(socket)=>{
                     socket.to(roomName).broadcast.emit('user-disconnected',USERNAME);
                 }
             )
-            await roomModel.deleteMany({ users: { $exists: true, $size: 0 } })
+            // await roomModel.deleteMany({ users: { $exists: true, $size: 0 } })
         }
         
     })
